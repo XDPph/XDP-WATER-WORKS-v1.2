@@ -360,11 +360,11 @@
             }
         }
 
-        // Fetch Data from Live Google Sheet Database
+        // Fetch Data from Live Google Sheet Database targeting Consumer_Index
         async function fetchWaterDatabase() {
             const statusText = document.getElementById('db-status-text');
             try {
-                const response = await fetch(`${WEB_APP_URL}?sheet=Sheet1`);
+                const response = await fetch(`${WEB_APP_URL}?sheet=Consumer_Index`);
                 const result = await response.json();
 
                 if (result.status === "success" && result.data) {
@@ -379,7 +379,7 @@
             }
         }
 
-        // Process Raw Sheet Rows into Consumers and Readings
+        // Process Raw Sheet Rows mapping Full_Name and PASSEND
         function processSheetData(rows) {
             const consumerMap = new Map();
             readingsDB = {};
@@ -389,7 +389,7 @@
                 const name = row.Full_Name || row.FullName || row.Name;
                 if (!accNo || !name) return;
 
-                // Populate unique consumer profile
+                // Populate unique consumer profile mapping PASSEND
                 if (!consumerMap.has(accNo)) {
                     consumerMap.set(accNo, {
                         Account_No: accNo,
