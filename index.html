@@ -293,15 +293,20 @@
             navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
         }
 
-        // Fetch Data from Live Google Sheet Database targeting APP DATA tab
+        // Fetch Data from both Consumer_Index and APP DATA tabs
         async function fetchWaterDatabase() {
             const statusText = document.getElementById('db-status-text');
             try {
-                const response = await fetch(`${WEB_APP_URL}?sheet=APP%20DATA`);
-                const result = await response.json();
+                // Fetch credentials from Consumer_Index tab
+                const consumerResponse = await fetch(`${WEB_APP_URL}?sheet=Consumer_Index`);
+                const consumerResult = await consumerResponse.json();
 
-                if (result.status === "success" && result.data) {
-                    processSheetData(result.data);
+                // Fetch readings and bills from APP DATA tab
+                const appDataResponse = await fetch(`${WEB_APP_URL}?sheet=APP%20DATA`);
+                const appDataResult = await appDataResponse.json();
+
+                if (consumerResult.status === "success" && appDataResult.status === "success") {
+                    processDatabase(consumerResult.data, appDataResult.data);
 
                     // Persistent Session Check (Indefinite until manual logout)
                     const savedSession = localStorage.getItem('dalcon_session');
@@ -321,7 +326,7 @@
 
                     if (statusText) statusText.textContent = "Enter your registered credentials to access your portal";
                 } else {
-                    if (statusText) statusText.textContent = "Error loading database records.";
+                    if (statusText) statusText.textContent = "Error loading database records from sheets.";
                 }
             } catch (error) {
                 console.error("Database connection error:", error);
@@ -329,38 +334,47 @@
             }
         }
 
-        // Process Raw Sheet Rows mapping APP DATA fields
-        function processSheetData(rows) {
+        // Process records from both tabs
+        function processDatabase(consumerRows, appDataRows) {
             const consumerMap = new Map();
             readingsDB = {};
 
-            rows.forEach(row => {
-                const accNo = row.Account_No || row.AccountNo || row.Account;
-                const name = row.Full_Name || row.FullName || row.Name;
+            // 1. Load authentications from Consumer_Index tab
+            consumerRows.forEach(row => {
+                const accNo = row.ACCOUNT_NO || row.ACCOUNTNO || row.ACCOUNT || row.ACCOUNT_NUMBER;
+                const name = row.FULL_NAME || row.FULLNAME || row.NAME;
+                const pass = row.PASSEND || row.PIN || row.PASSWORD || "0000";
+
                 if (!accNo || !name) return;
 
-                if (!consumerMap.has(accNo)) {
-                    consumerMap.set(accNo, {
-                        Account_No: accNo,
-                        Full_Name: String(name).trim().toUpperCase(),
-                        PASSEND: String(row.PASSEND || row.PIN || "0000"),
-                        Balance_Due: row.Balance_Due || row.Balance || "₱0.00"
-                    });
-                }
+                consumerMap.set(String(accNo).trim(), {
+                    Account_No: String(accNo).trim(),
+                    Full_Name: String(name).trim().toUpperCase(),
+                    PASSEND: String(pass).trim(),
+                    Balance_Due: row.BALANCE_DUE || row.BALANCE || "₱0.00"
+                });
+            });
 
-                if (row.Reading_Date || row.Curr_Reading) {
-                    if (!readingsDB[accNo]) readingsDB[accNo] = [];
-                    readingsDB[accNo].push({
-                        Billing_Month: row.Billing_Month || "Current Billing",
-                        Reading_Date: row.Reading_Date || new Date().toISOString().split('T')[0],
-                        Prev_Reading: Number(row.Prev_Reading || 0),
-                        Curr_Reading: Number(row.Curr_Reading || 0),
-                        Consumption: Number(row.Consumption || 0),
-                        Current_Charge: row.Current_Charge || "₱0.00",
-                        Arrears: row.Arrears || "₱0.00",
-                        Amount_Due: row.Amount_Due || row.Total_Due || "₱0.00",
-                        Amount_Paid: row.Amount_Paid || "₱0.00",
-                        Balance_Due: row.Balance_Due || "₱0.00"
+            // 2. Load billing/history records from APP DATA tab
+            appDataRows.forEach(row => {
+                const accNo = row.ACCOUNT_NO || row.ACCOUNTNO || row.ACCOUNT || row.ACCOUNT_NUMBER;
+                if (!accNo) return;
+
+                const cleanAccNo = String(accNo).trim();
+                if (!readingsDB[cleanAccNo]) readingsDB[cleanAccNo] = [];
+                
+                if (row.READING_DATE || row.CURR_READING || row.BILLING_MONTH) {
+                    readingsDB[cleanAccNo].push({
+                        Billing_Month: row.BILLING_MONTH || "Current Billing",
+                        Reading_Date: row.READING_DATE || new Date().toISOString().split('T')[0],
+                        Prev_Reading: Number(row.PREV_READING || 0),
+                        Curr_Reading: Number(row.CURR_READING || 0),
+                        Consumption: Number(row.CONSUMPTION || 0),
+                        Current_Charge: row.CURRENT_CHARGE || "₱0.00",
+                        Arrears: row.ARREARS || "₱0.00",
+                        Amount_Due: row.AMOUNT_DUE || row.TOTAL_DUE || "₱0.00",
+                        Amount_Paid: row.AMOUNT_PAID || "₱0.00",
+                        Balance_Due: row.BALANCE_DUE || "₱0.00"
                     });
                 }
             });
