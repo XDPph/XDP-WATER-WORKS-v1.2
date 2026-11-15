@@ -141,23 +141,7 @@
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="hidden space-y-6">
             
-            <!-- Meter & Balance Overview Cards (Account Number card removed) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
-                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Meter Number</p>
-                    <p id="disp-meter" class="text-xl font-bold text-white mt-1">-</p>
-                    <p class="text-xs text-emerald-400 mt-0.5 font-medium flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Status: Active
-                    </p>
-                </div>
-                <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
-                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Current Balance Due</p>
-                    <p id="disp-balance" class="text-xl font-bold text-amber-300 mt-1">₱0.00</p>
-                    <p class="text-xs text-cyan-400/70 mt-0.5">Synced Live</p>
-                </div>
-            </div>
-
-            <!-- Latest Reading Banner with Prominent Previous, Present & Consumption Breakdown -->
+            <!-- 1. Latest Reading Banner with Prominent Previous, Present & Consumption Breakdown -->
             <div class="bg-gradient-to-r from-cyan-900/40 via-blue-900/30 to-slate-900/60 border border-cyan-500/30 rounded-2xl p-6 shadow-xl backdrop-blur-md aqua-glow">
                 <div class="flex flex-col gap-5">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -190,7 +174,14 @@
                 </div>
             </div>
 
-            <!-- Billing History Table -->
+            <!-- 2. ARREARS Card -->
+            <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
+                <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">ARREARS</p>
+                <p id="disp-balance" class="text-2xl font-bold text-amber-300 mt-1">₱0.00</p>
+                <p class="text-xs text-cyan-400/70 mt-0.5">Synced Live</p>
+            </div>
+
+            <!-- 3. Billing History Table -->
             <div class="aqua-card rounded-2xl shadow-lg border border-cyan-500/20 overflow-hidden">
                 <div class="p-4 border-b border-cyan-500/20 flex justify-between items-center bg-cyan-950/30">
                     <div>
@@ -423,7 +414,6 @@
             document.getElementById('nav-username').textContent = consumer.Full_Name;
 
             containers.forEach(container => {
-                container.querySelector('#disp-meter').textContent = consumer.Meter_No;
                 container.querySelector('#disp-balance').textContent = consumer.Balance_Due || "₱0.00";
 
                 let history = readingsDB[consumer.Account_No] || [];
