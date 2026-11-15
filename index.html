@@ -151,7 +151,7 @@
                             <p class="text-xs text-cyan-300/80 mt-0.5">Reading Date: <span id="latest-date" class="text-cyan-100 font-medium">-</span></p>
                         </div>
                         <div class="text-left sm:text-right mt-2 sm:mt-0">
-                            <p class="text-[10px] uppercase font-semibold text-cyan-400">Total Amount Due</p>
+                            <p class="text-[10px] uppercase font-semibold text-cyan-400">Current Charge</p>
                             <p id="latest-amount" class="text-2xl font-bold text-emerald-300">-</p>
                         </div>
                     </div>
@@ -174,11 +174,18 @@
                 </div>
             </div>
 
-            <!-- 2. ARREARS Card -->
-            <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
-                <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">ARREARS</p>
-                <p id="disp-balance" class="text-2xl font-bold text-amber-300 mt-1">₱0.00</p>
-                <p class="text-xs text-cyan-400/70 mt-0.5">Synced Live</p>
+            <!-- 2. ARREARS Card with Balance_Due -->
+            <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20 flex justify-between items-center">
+                <div>
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">ARREARS</p>
+                    <p id="disp-arrears" class="text-2xl font-bold text-amber-300 mt-1">₱0.00</p>
+                    <p class="text-xs text-cyan-400/70 mt-0.5">Synced Live</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Total Due</p>
+                    <p id="disp-balance" class="text-2xl font-bold text-emerald-300 mt-1">₱0.00</p>
+                    <p class="text-xs text-cyan-400/70 mt-0.5">Balance Due</p>
+                </div>
             </div>
 
             <!-- 3. Billing History Table -->
@@ -234,7 +241,7 @@
         function formatDate(dateStr) {
             if (!dateStr) return "-";
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr; // Return original if not a valid date
+            if (isNaN(d.getTime())) return dateStr;
             const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
             const dd = String(d.getUTCDate()).padStart(2, '0');
             const yyyy = d.getUTCFullYear();
@@ -288,13 +295,12 @@
                 if (result.status === "success" && result.data) {
                     processSheetData(result.data);
 
-                    // Check if there's an active session stored within the 1-hour expiration limit
                     const savedSession = localStorage.getItem('dalcon_session');
                     if (savedSession) {
                         try {
                             const sessionData = JSON.parse(savedSession);
                             const currentTime = new Date().getTime();
-                            const oneHourLimit = 60 * 60 * 1000; // 1 Hour in milliseconds
+                            const oneHourLimit = 60 * 60 * 1000;
 
                             if (currentTime - sessionData.timestamp < oneHourLimit) {
                                 const freshMatch = consumersDB.find(c => c.Account_No === sessionData.consumer.Account_No);
@@ -426,10 +432,7 @@
             document.getElementById('nav-username').textContent = consumer.Full_Name;
 
             containers.forEach(container => {
-                container.querySelector('#disp-balance').textContent = consumer.Balance_Due || "₱0.00";
-
                 let history = readingsDB[consumer.Account_No] || [];
-                // Sort by Reading_Date descending to pull the latest billing record based on Reading_Date
                 history.sort((a, b) => new Date(b.Reading_Date) - new Date(a.Reading_Date));
 
                 container.querySelector('#history-count').textContent = `${history.length} records`;
@@ -441,7 +444,11 @@
                     container.querySelector('#latest-prev').textContent = latest.Prev_Reading;
                     container.querySelector('#latest-pres').textContent = latest.Curr_Reading;
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
-                    container.querySelector('#latest-amount').textContent = latest.Amount_Due;
+                    container.querySelector('#latest-amount').textContent = latest.Current_Charge; // Mapped to Current_Charge
+                    
+                    // Set Arrears and Balance Due from latest reading record or consumer profile
+                    container.querySelector('#disp-arrears').textContent = latest.Arrears || "₱0.00";
+                    container.querySelector('#disp-balance').textContent = latest.Balance_Due || consumer.Balance_Due || "₱0.00";
                 } else {
                     container.querySelector('#latest-month').textContent = "No Records Found";
                     container.querySelector('#latest-date').textContent = "N/A";
@@ -449,6 +456,8 @@
                     container.querySelector('#latest-pres').textContent = "0";
                     container.querySelector('#latest-consumption').textContent = "0 cu.m";
                     container.querySelector('#latest-amount').textContent = "₱0.00";
+                    container.querySelector('#disp-arrears').textContent = "₱0.00";
+                    container.querySelector('#disp-balance').textContent = consumer.Balance_Due || "₱0.00";
                 }
 
                 const tbody = container.querySelector('#history-table-body');
