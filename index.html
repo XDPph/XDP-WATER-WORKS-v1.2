@@ -230,6 +230,17 @@
         let isMobileView = false;
         let loggedInConsumer = null;
 
+        // Helper function to format date strings into MM-DD-YYYY
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr; // Return original if not a valid date
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            const yyyy = d.getUTCFullYear();
+            return `${mm}-${dd}-${yyyy}`;
+        }
+
         // Generate Dynamic PWA Web App Manifest
         const manifestData = {
             "name": "Dalcon Waterworks Portal",
@@ -332,6 +343,7 @@
                 if (row.Reading_Date || row.Curr_Reading) {
                     if (!readingsDB[accNo]) readingsDB[accNo] = [];
                     readingsDB[accNo].push({
+                        Billing_Month: row.Billing_Month || "Current Billing",
                         Reading_Date: row.Reading_Date || new Date().toISOString().split('T')[0],
                         Prev_Reading: Number(row.Prev_Reading || 0),
                         Curr_Reading: Number(row.Curr_Reading || 0),
@@ -424,8 +436,8 @@
 
                 if (history.length > 0) {
                     const latest = history[0];
-                    container.querySelector('#latest-month').textContent = `Reading Period: ${latest.Reading_Date}`;
-                    container.querySelector('#latest-date').textContent = latest.Reading_Date;
+                    container.querySelector('#latest-month').textContent = latest.Billing_Month;
+                    container.querySelector('#latest-date').textContent = formatDate(latest.Reading_Date);
                     container.querySelector('#latest-prev').textContent = latest.Prev_Reading;
                     container.querySelector('#latest-pres').textContent = latest.Curr_Reading;
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
@@ -451,7 +463,7 @@
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-cyan-900/20 transition border-b border-cyan-500/10";
                     tr.innerHTML = `
-                        <td class="py-2.5 px-3 font-medium text-white">${item.Reading_Date}</td>
+                        <td class="py-2.5 px-3 font-medium text-white">${formatDate(item.Reading_Date)}</td>
                         <td class="py-2.5 px-3 text-cyan-200">${item.Prev_Reading}</td>
                         <td class="py-2.5 px-3 text-white font-medium">${item.Curr_Reading}</td>
                         <td class="py-2.5 px-3 text-cyan-300 font-semibold">${item.Consumption} cu.m</td>
