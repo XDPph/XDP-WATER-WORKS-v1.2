@@ -295,22 +295,16 @@
                 if (result.status === "success" && result.data) {
                     processSheetData(result.data);
 
+                    // Persistent Session Check (Indefinite until manual logout)
                     const savedSession = localStorage.getItem('dalcon_session');
                     if (savedSession) {
                         try {
                             const sessionData = JSON.parse(savedSession);
-                            const currentTime = new Date().getTime();
-                            const oneHourLimit = 60 * 60 * 1000;
-
-                            if (currentTime - sessionData.timestamp < oneHourLimit) {
-                                const freshMatch = consumersDB.find(c => c.Account_No === sessionData.consumer.Account_No);
-                                if (freshMatch) {
-                                    loggedInConsumer = freshMatch;
-                                    loadDashboard(freshMatch);
-                                    return;
-                                }
-                            } else {
-                                localStorage.removeItem('dalcon_session');
+                            const freshMatch = consumersDB.find(c => c.Account_No === sessionData.consumer.Account_No);
+                            if (freshMatch) {
+                                loggedInConsumer = freshMatch;
+                                loadDashboard(freshMatch);
+                                return;
                             }
                         } catch (err) {
                             localStorage.removeItem('dalcon_session');
@@ -407,8 +401,7 @@
                 loggedInConsumer = consumer;
                 
                 const sessionData = {
-                    consumer: consumer,
-                    timestamp: new Date().getTime()
+                    consumer: consumer
                 };
                 localStorage.setItem('dalcon_session', JSON.stringify(sessionData));
 
@@ -444,9 +437,8 @@
                     container.querySelector('#latest-prev').textContent = latest.Prev_Reading;
                     container.querySelector('#latest-pres').textContent = latest.Curr_Reading;
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
-                    container.querySelector('#latest-amount').textContent = latest.Current_Charge; // Mapped to Current_Charge
+                    container.querySelector('#latest-amount').textContent = latest.Current_Charge;
                     
-                    // Set Arrears and Balance Due from latest reading record or consumer profile
                     container.querySelector('#disp-arrears').textContent = latest.Arrears || "₱0.00";
                     container.querySelector('#disp-balance').textContent = latest.Balance_Due || consumer.Balance_Due || "₱0.00";
                 } else {
