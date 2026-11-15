@@ -8,6 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Meta Tags & Manifest Link -->
+    <meta name="theme-color" content="#030712">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dalcon Water">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/083344/06b6d4?text=💧">
+    <link rel="manifest" id="pwa-manifest">
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         /* Custom Aqua Glow & Ripple Effects */
@@ -56,8 +65,12 @@
                     <p class="text-xs text-cyan-400/80">Consumer Self-Service & Billing System</p>
                 </div>
             </div>
-            <!-- Mobile Preview Toggle & Logout Badge -->
-            <div class="flex items-center space-x-3">
+            <!-- Mobile Preview Toggle, Install App & Logout Badge -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="showInstallModal()" id="install-shortcut-btn" class="inline-flex items-center space-x-1 text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3 py-1.5 rounded-full border border-cyan-400/30 transition font-medium shadow-md">
+                    <span>📲</span>
+                    <span>Add to Home Screen</span>
+                </button>
                 <button onclick="toggleMobileFrame()" id="preview-toggle-btn" class="hidden sm:inline-flex items-center space-x-1.5 text-xs bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 px-3 py-1.5 rounded-full border border-cyan-500/30 transition font-medium shadow-sm">
                     <span>📱</span>
                     <span id="toggle-btn-text">Mobile View</span>
@@ -70,6 +83,51 @@
             </div>
         </div>
     </header>
+
+    <!-- PWA Install Modal / Instructions Dialog -->
+    <div id="install-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
+        <div class="aqua-card max-w-md w-full rounded-2xl p-6 border border-cyan-500/40 shadow-2xl relative">
+            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-cyan-400 hover:text-white text-lg font-bold">✕</button>
+            <div class="text-center mb-4">
+                <div class="inline-flex p-3 bg-cyan-500/20 border border-cyan-500/30 rounded-2xl text-cyan-300 text-3xl mb-2">
+                    📱💧
+                </div>
+                <h3 class="text-xl font-bold text-white">Install Dalcon Water Portal</h3>
+                <p class="text-xs text-cyan-300/80 mt-1">Create a quick screen shortcut on your mobile device for instant billing access.</p>
+            </div>
+            
+            <div class="space-y-4 text-xs text-cyan-100/90 my-4 bg-slate-950/70 p-4 rounded-xl border border-cyan-500/20">
+                <div id="native-install-container" class="hidden pb-3 border-b border-cyan-500/20">
+                    <p class="font-semibold text-cyan-300 mb-2">⚡ Quick One-Tap Install:</p>
+                    <button id="native-install-btn" onclick="triggerNativeInstall()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 text-white font-semibold py-2.5 rounded-xl shadow-md transition">
+                        Install App to Home Screen
+                    </button>
+                </div>
+
+                <div>
+                    <p class="font-semibold text-cyan-300 mb-1">🍎 For iPhone / iPad (Safari):</p>
+                    <ol class="list-decimal list-inside space-y-1 text-cyan-200/80">
+                        <li>Tap the <span class="text-white font-bold">Share</span> button at the bottom of Safari.</li>
+                        <li>Scroll down and select <span class="text-white font-bold">"Add to Home Screen"</span>.</li>
+                        <li>Tap <span class="text-white font-bold">Add</span> in the top right corner.</li>
+                    </ol>
+                </div>
+
+                <div class="pt-2 border-t border-cyan-500/20">
+                    <p class="font-semibold text-cyan-300 mb-1">🤖 For Android (Chrome / Samsung):</p>
+                    <ol class="list-decimal list-inside space-y-1 text-cyan-200/80">
+                        <li>Tap the <span class="text-white font-bold">Three-dot Menu</span> (top-right).</li>
+                        <li>Select <span class="text-white font-bold">"Install app"</span> or <span class="text-white font-bold">"Add to Home screen"</span>.</li>
+                        <li>Confirm by tapping <span class="text-white font-bold">Install</span>.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <button onclick="closeInstallModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-cyan-200 font-semibold py-2.5 rounded-xl border border-cyan-500/20 transition">
+                Got it, Thanks!
+            </button>
+        </div>
+    </div>
 
     <!-- Outer Wrapper / Mobile Frame Container -->
     <div id="viewport-wrapper" class="flex-grow flex items-center justify-center p-0 sm:p-6 transition-all duration-300 relative z-10">
@@ -226,6 +284,74 @@
 
     <!-- Script Logic -->
     <script>
+        // Generate Dynamic PWA Web App Manifest
+        const manifestData = {
+            "name": "Dalcon Waterworks Portal",
+            "short_name": "Dalcon Water",
+            "description": "Consumer Self-Service Water Billing & Consumption Portal",
+            "start_url": window.location.href,
+            "display": "standalone",
+            "background_color": "#030712",
+            "theme_color": "#030712",
+            "icons": [
+                {
+                    "src": "https://placehold.co/192x192/083344/06b6d4?text=💧",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": "https://placehold.co/512x512/083344/06b6d4?text=💧",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+        const stringManifest = JSON.stringify(manifestData);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+
+        // Register Service Worker for PWA Offline Caching
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', (e) => { e.waitUntil(self.skipWaiting()); });
+                self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+                self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });
+            `;
+            const swBlob = new Blob([swCode], {type: 'text/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        }
+
+        // PWA Install Prompt Capture
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('native-install-container').classList.remove('hidden');
+        });
+
+        function showInstallModal() {
+            document.getElementById('install-modal').classList.remove('hidden');
+        }
+
+        function closeInstallModal() {
+            document.getElementById('install-modal').classList.add('hidden');
+        }
+
+        function triggerNativeInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('native-install-container').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                    closeInstallModal();
+                });
+            } else {
+                alert("Installation prompt is ready! Please use your browser's menu (Share or Three-dots) to 'Add to Home Screen'.");
+            }
+        }
+
         const consumersDB = [
             { Account_No: "ACC-001", Full_Name: "GONZALEZ MICHAEL", Purok_Address: "Purok 1", Meter_No: "MTR-1001", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱450.00" },
             { Account_No: "ACC-002", Full_Name: "SABANDAL DELFIN", Purok_Address: "Purok 2", Meter_No: "MTR-1002", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
