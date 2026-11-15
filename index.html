@@ -141,7 +141,7 @@
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="hidden space-y-6">
             
-            <!-- 1. Latest Reading Banner with Prominent Previous, Present & Consumption Breakdown -->
+            <!-- 1. Latest Reading Banner -->
             <div class="bg-gradient-to-r from-cyan-900/40 via-blue-900/30 to-slate-900/60 border border-cyan-500/30 rounded-2xl p-6 shadow-xl backdrop-blur-md aqua-glow">
                 <div class="flex flex-col gap-5">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -156,7 +156,7 @@
                         </div>
                     </div>
 
-                    <!-- Detailed Reading Metrics Grid (Prev, Pres, Consumption) -->
+                    <!-- Detailed Reading Metrics Grid -->
                     <div class="grid grid-cols-3 gap-3 bg-slate-950/80 p-4 rounded-xl border border-cyan-500/20 shadow-inner">
                         <div class="text-center border-r border-cyan-500/20 pr-2">
                             <p class="text-[10px] sm:text-xs uppercase font-semibold text-cyan-400">Previous Reading</p>
@@ -194,13 +194,15 @@
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-cyan-950/60 text-[10px] font-semibold text-cyan-300 uppercase tracking-wider border-b border-cyan-500/20">
-                                <th class="py-2.5 px-3">Period</th>
-                                <th class="py-2.5 px-3">Date</th>
+                                <th class="py-2.5 px-3">Reading Date</th>
                                 <th class="py-2.5 px-3">Prev</th>
-                                <th class="py-2.5 px-3">Pres</th>
-                                <th class="py-2.5 px-3">Cu.m</th>
-                                <th class="py-2.5 px-3">Due</th>
-                                <th class="py-2.5 px-3">Status</th>
+                                <th class="py-2.5 px-3">Curr</th>
+                                <th class="py-2.5 px-3">Consumption</th>
+                                <th class="py-2.5 px-3">Current Charge</th>
+                                <th class="py-2.5 px-3">Arrears</th>
+                                <th class="py-2.5 px-3">Amount Due</th>
+                                <th class="py-2.5 px-3">Amount Paid</th>
+                                <th class="py-2.5 px-3">Balance Due</th>
                             </tr>
                         </thead>
                         <tbody id="history-table-body" class="divide-y divide-cyan-500/10">
@@ -265,11 +267,11 @@
             navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
         }
 
-        // Fetch Data from Live Google Sheet Database targeting Consumer_Index
+        // Fetch Data from Live Google Sheet Database targeting APP DATA tab
         async function fetchWaterDatabase() {
             const statusText = document.getElementById('db-status-text');
             try {
-                const response = await fetch(`${WEB_APP_URL}?sheet=Consumer_Index`);
+                const response = await fetch(`${WEB_APP_URL}?sheet=APP%20DATA`);
                 const result = await response.json();
 
                 if (result.status === "success" && result.data) {
@@ -308,7 +310,7 @@
             }
         }
 
-        // Process Raw Sheet Rows mapping Full_Name and PASSEND
+        // Process Raw Sheet Rows mapping APP DATA fields
         function processSheetData(rows) {
             const consumerMap = new Map();
             readingsDB = {};
@@ -322,25 +324,23 @@
                     consumerMap.set(accNo, {
                         Account_No: accNo,
                         Full_Name: String(name).trim().toUpperCase(),
-                        Purok_Address: row.Purok_Address || row.Address || "Purok 1",
-                        Meter_No: row.Meter_No || row.MeterNo || "MTR-000",
-                        Status: row.Status || "Active",
                         PASSEND: String(row.PASSEND || row.PIN || "0000"),
                         Balance_Due: row.Balance_Due || row.Balance || "₱0.00"
                     });
                 }
 
-                if (row.Billing_Month || row.Bill_ID) {
+                if (row.Reading_Date || row.Curr_Reading) {
                     if (!readingsDB[accNo]) readingsDB[accNo] = [];
                     readingsDB[accNo].push({
-                        Bill_ID: row.Bill_ID || "BIL-00",
-                        Billing_Month: row.Billing_Month || "Current Billing",
                         Reading_Date: row.Reading_Date || new Date().toISOString().split('T')[0],
                         Prev_Reading: Number(row.Prev_Reading || 0),
-                        Pres_Reading: Number(row.Pres_Reading || 0),
+                        Curr_Reading: Number(row.Curr_Reading || 0),
                         Consumption: Number(row.Consumption || 0),
-                        Total_Due: row.Total_Due || "₱0.00",
-                        Status: row.Bill_Status || row.Billing_Status || "Unpaid"
+                        Current_Charge: row.Current_Charge || "₱0.00",
+                        Arrears: row.Arrears || "₱0.00",
+                        Amount_Due: row.Amount_Due || row.Total_Due || "₱0.00",
+                        Amount_Paid: row.Amount_Paid || "₱0.00",
+                        Balance_Due: row.Balance_Due || "₱0.00"
                     });
                 }
             });
@@ -417,18 +417,19 @@
                 container.querySelector('#disp-balance').textContent = consumer.Balance_Due || "₱0.00";
 
                 let history = readingsDB[consumer.Account_No] || [];
+                // Sort by Reading_Date descending to pull the latest billing record based on Reading_Date
                 history.sort((a, b) => new Date(b.Reading_Date) - new Date(a.Reading_Date));
 
                 container.querySelector('#history-count').textContent = `${history.length} records`;
 
                 if (history.length > 0) {
                     const latest = history[0];
-                    container.querySelector('#latest-month').textContent = latest.Billing_Month;
+                    container.querySelector('#latest-month').textContent = `Reading Period: ${latest.Reading_Date}`;
                     container.querySelector('#latest-date').textContent = latest.Reading_Date;
                     container.querySelector('#latest-prev').textContent = latest.Prev_Reading;
-                    container.querySelector('#latest-pres').textContent = latest.Pres_Reading;
+                    container.querySelector('#latest-pres').textContent = latest.Curr_Reading;
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
-                    container.querySelector('#latest-amount').textContent = latest.Total_Due;
+                    container.querySelector('#latest-amount').textContent = latest.Amount_Due;
                 } else {
                     container.querySelector('#latest-month').textContent = "No Records Found";
                     container.querySelector('#latest-date').textContent = "N/A";
@@ -442,25 +443,23 @@
                 tbody.innerHTML = "";
 
                 if (history.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-cyan-400/60">No billing history available yet.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-cyan-400/60">No billing history available yet.</td></tr>`;
                     return;
                 }
 
                 history.forEach(item => {
-                    const statusBadge = item.Status === 'Paid' 
-                        ? `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">Paid</span>`
-                        : `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">Unpaid</span>`;
-
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-cyan-900/20 transition border-b border-cyan-500/10";
                     tr.innerHTML = `
-                        <td class="py-2.5 px-3 font-medium text-white">${item.Billing_Month}</td>
-                        <td class="py-2.5 px-3 text-cyan-300/80 text-[11px]">${item.Reading_Date}</td>
+                        <td class="py-2.5 px-3 font-medium text-white">${item.Reading_Date}</td>
                         <td class="py-2.5 px-3 text-cyan-200">${item.Prev_Reading}</td>
-                        <td class="py-2.5 px-3 text-white font-medium">${item.Pres_Reading}</td>
+                        <td class="py-2.5 px-3 text-white font-medium">${item.Curr_Reading}</td>
                         <td class="py-2.5 px-3 text-cyan-300 font-semibold">${item.Consumption} cu.m</td>
-                        <td class="py-2.5 px-3 text-emerald-300 font-semibold">${item.Total_Due}</td>
-                        <td class="py-2.5 px-3">${statusBadge}</td>
+                        <td class="py-2.5 px-3 text-cyan-100">${item.Current_Charge}</td>
+                        <td class="py-2.5 px-3 text-amber-300">${item.Arrears}</td>
+                        <td class="py-2.5 px-3 text-emerald-300 font-semibold">${item.Amount_Due}</td>
+                        <td class="py-2.5 px-3 text-cyan-200">${item.Amount_Paid}</td>
+                        <td class="py-2.5 px-3 text-amber-400 font-semibold">${item.Balance_Due}</td>
                     `;
                     tbody.appendChild(tr);
                 });
