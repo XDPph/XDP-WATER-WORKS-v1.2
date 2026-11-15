@@ -117,7 +117,14 @@
                 <div class="inline-flex p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl text-cyan-400 text-2xl mb-2 shadow-inner">
                     💧
                 </div>
-                <h2 class="text-2xl font-bold tracking-tight text-white">Consumer Login</h2>
+                <div class="flex items-center justify-center gap-2">
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Consumer Login</h2>
+                    <!-- Connected Green Dot Indicator (hidden initially until connected) -->
+                    <span id="db-connected-dot" class="hidden relative flex h-3 w-3" title="Connected to Database">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-sm shadow-emerald-500"></span>
+                    </span>
+                </div>
                 <p id="db-status-text" class="text-xs text-cyan-400/80 mt-1">Connecting to live Google Sheet database...</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
@@ -296,12 +303,16 @@
         // Fetch Data from Live Google Sheet Database targeting APP DATA tab
         async function fetchWaterDatabase() {
             const statusText = document.getElementById('db-status-text');
+            const greenDot = document.getElementById('db-connected-dot');
             try {
                 const response = await fetch(`${WEB_APP_URL}?sheet=APP%20DATA`);
                 const result = await response.json();
 
                 if (result.status === "success" && result.data) {
                     processSheetData(result.data);
+
+                    // Show green dot indicator upon successful connection
+                    if (greenDot) greenDot.classList.remove('hidden');
 
                     // Persistent Session Check (Indefinite until manual logout)
                     const savedSession = localStorage.getItem('dalcon_session');
@@ -322,10 +333,12 @@
                     if (statusText) statusText.textContent = "Enter your registered credentials to access your portal";
                 } else {
                     if (statusText) statusText.textContent = "Error loading database records.";
+                    if (greenDot) greenDot.classList.add('hidden');
                 }
             } catch (error) {
                 console.error("Database connection error:", error);
                 if (statusText) statusText.textContent = "Network error connecting to database.";
+                if (greenDot) greenDot.classList.add('hidden');
             }
         }
 
@@ -447,7 +460,6 @@
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
                     container.querySelector('#latest-amount').textContent = latest.Current_Charge;
                     
-                    // If latest Balance_Due is 0.00, force ARREARS to 0.00 as well
                     const balanceDueVal = latest.Balance_Due || consumer.Balance_Due || "₱0.00";
                     if (isZeroBalance(balanceDueVal)) {
                         container.querySelector('#disp-arrears').textContent = "₱0.00";
