@@ -290,14 +290,26 @@
                 if (result.status === "success" && result.data) {
                     processSheetData(result.data);
 
-                    // Restore permanent session if it exists in localStorage
-                    const savedAccountNo = localStorage.getItem('dalcon_active_account');
-                    if (savedAccountNo) {
-                        const freshMatch = consumersDB.find(c => c.Account_No === savedAccountNo);
-                        if (freshMatch) {
-                            loggedInConsumer = freshMatch;
-                            loadDashboard(freshMatch);
-                            return;
+                    // Check if there's an active session stored within the 1-hour expiration limit
+                    const savedSession = localStorage.getItem('dalcon_session');
+                    if (savedSession) {
+                        try {
+                            const sessionData = JSON.parse(savedSession);
+                            const currentTime = new Date().getTime();
+                            const oneHourLimit = 60 * 60 * 1000; // 1 Hour in milliseconds
+
+                            if (currentTime - sessionData.timestamp < oneHourLimit) {
+                                const freshMatch = consumersDB.find(c => c.Account_No === sessionData.consumer.Account_No);
+                                if (freshMatch) {
+                                    loggedInConsumer = freshMatch;
+                                    loadDashboard(freshMatch);
+                                    return;
+                                }
+                            } else {
+                                localStorage.removeItem('dalcon_session');
+                            }
+                        } catch (err) {
+                            localStorage.removeItem('dalcon_session');
                         }
                     }
 
@@ -391,8 +403,11 @@
             if (consumer) {
                 loggedInConsumer = consumer;
                 
-                // Store active account permanently until logout
-                localStorage.setItem('dalcon_active_account', consumer.Account_No);
+                const sessionData = {
+                    consumer: consumer,
+                    timestamp: new Date().getTime()
+                };
+                localStorage.setItem('dalcon_session', JSON.stringify(sessionData));
 
                 errorDiv.classList.add('hidden');
                 loadDashboard(consumer);
@@ -472,8 +487,7 @@
 
         function logout() {
             loggedInConsumer = null;
-            // Clear session permanently only when Logout button is clicked
-            localStorage.removeItem('dalcon_active_account');
+            localStorage.removeItem('dalcon_session');
             const containers = [document.getElementById('desktop-view-container'), document.getElementById('phone-frame')];
             containers.forEach(container => {
                 container.querySelector('#dashboard-section').classList.add('hidden');
