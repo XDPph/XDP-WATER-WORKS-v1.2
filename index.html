@@ -168,7 +168,7 @@
                     💧
                 </div>
                 <h2 class="text-2xl font-bold tracking-tight text-white">Consumer Login</h2>
-                <p class="text-sm text-slate-400 mt-1">Enter your registered credentials to access your portal</p>
+                <p id="db-status-text" class="text-xs text-cyan-400/80 mt-1">Connecting to live Google Sheet database...</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
                 <div>
@@ -182,7 +182,7 @@
                         class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition">
                 </div>
                 <div id="login-error" class="text-rose-400 text-xs hidden font-medium text-center bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
-                <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-cyan-500/20 cursor-pointer">
+                <button type="submit" id="login-btn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-cyan-500/20 cursor-pointer">
                     Access Portal Dashboard
                 </button>
             </form>
@@ -208,7 +208,7 @@
                 <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
                     <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Current Balance Due</p>
                     <p id="disp-balance" class="text-xl font-bold text-amber-300 mt-1">₱0.00</p>
-                    <p class="text-xs text-cyan-400/70 mt-0.5">Updated Live</p>
+                    <p class="text-xs text-cyan-400/70 mt-0.5">Synced Live</p>
                 </div>
             </div>
 
@@ -284,6 +284,14 @@
 
     <!-- Script Logic -->
     <script>
+        // Deployed Google Apps Script URL
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz_vb7qti0X5aZXoldTZg45V0Mq4Q8EpCy13JiRyv2s7UrbGItfWetE752_R0oGe3Ew/exec";
+
+        let consumersDB = [];
+        let readingsDB = {};
+        let isMobileView = false;
+        let loggedInConsumer = null;
+
         // Generate Dynamic PWA Web App Manifest
         const manifestData = {
             "name": "Dalcon Waterworks Portal",
@@ -352,41 +360,74 @@
             }
         }
 
-        const consumersDB = [
-            { Account_No: "ACC-001", Full_Name: "GONZALEZ MICHAEL", Purok_Address: "Purok 1", Meter_No: "MTR-1001", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱450.00" },
-            { Account_No: "ACC-002", Full_Name: "SABANDAL DELFIN", Purok_Address: "Purok 2", Meter_No: "MTR-1002", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-003", Full_Name: "SARDUAL JOJO", Purok_Address: "Purok 3", Meter_No: "MTR-1003", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱120.00" },
-            { Account_No: "ACC-004", Full_Name: "ASARES CARMELITA", Purok_Address: "Purok 4", Meter_No: "MTR-1004", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-005", Full_Name: "JUNIO ADELAIDA", Purok_Address: "Purok 5", Meter_No: "MTR-1005", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱310.00" },
-            { Account_No: "ACC-006", Full_Name: "LASCO JOJO", Purok_Address: "Purok 6", Meter_No: "MTR-1006", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-007", Full_Name: "DALAGUAN CEASAR", Purok_Address: "Purok 7", Meter_No: "MTR-1007", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-008", Full_Name: "BURDEOS LORENA", Purok_Address: "Purok 8", Meter_No: "MTR-1008", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-009", Full_Name: "MERSOLA BENIDO", Purok_Address: "Purok 9", Meter_No: "MTR-1009", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
-            { Account_No: "ACC-010", Full_Name: "GANZAN MATEO", Purok_Address: "Purok 10", Meter_No: "MTR-1010", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" }
-        ];
+        // Fetch Data from Live Google Sheet Database
+        async function fetchWaterDatabase() {
+            const statusText = document.getElementById('db-status-text');
+            try {
+                const response = await fetch(`${WEB_APP_URL}?sheet=Sheet1`);
+                const result = await response.json();
 
-        const readingsDB = {
-            "ACC-001": [
-                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-05", Prev_Reading: 125, Pres_Reading: 140, Consumption: 15, Total_Due: "₱450.00", Status: "Unpaid" },
-                { Bill_ID: "BIL-2026-10", Billing_Month: "October 2026", Reading_Date: "2026-10-04", Prev_Reading: 110, Pres_Reading: 125, Consumption: 15, Total_Due: "₱450.00", Status: "Paid" },
-                { Bill_ID: "BIL-2026-09", Billing_Month: "September 2026", Reading_Date: "2026-09-03", Prev_Reading: 95, Pres_Reading: 110, Consumption: 15, Total_Due: "₱450.00", Status: "Paid" }
-            ],
-            "ACC-003": [
-                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-06", Prev_Reading: 50, Pres_Reading: 58, Consumption: 8, Total_Due: "₱240.00", Status: "Unpaid" },
-                { Bill_ID: "BIL-2026-10", Billing_Month: "October 2026", Reading_Date: "2026-10-05", Prev_Reading: 42, Pres_Reading: 50, Consumption: 8, Total_Due: "₱240.00", Status: "Paid" }
-            ],
-            "ACC-005": [
-                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-06", Prev_Reading: 210, Pres_Reading: 220, Consumption: 10, Total_Due: "₱310.00", Status: "Unpaid" }
-            ]
-        };
+                if (result.status === "success" && result.data) {
+                    processSheetData(result.data);
+                    if (statusText) statusText.textContent = "Enter your registered credentials to access your portal";
+                } else {
+                    if (statusText) statusText.textContent = "Error loading database records.";
+                }
+            } catch (error) {
+                console.error("Database connection error:", error);
+                if (statusText) statusText.textContent = "Network error connecting to database.";
+            }
+        }
 
-        let isMobileView = false;
-        let loggedInConsumer = null;
+        // Process Raw Sheet Rows into Consumers and Readings
+        function processSheetData(rows) {
+            const consumerMap = new Map();
+            readingsDB = {};
+
+            rows.forEach(row => {
+                const accNo = row.Account_No || row.AccountNo || row.Account;
+                const name = row.Full_Name || row.FullName || row.Name;
+                if (!accNo || !name) return;
+
+                // Populate unique consumer profile
+                if (!consumerMap.has(accNo)) {
+                    consumerMap.set(accNo, {
+                        Account_No: accNo,
+                        Full_Name: String(name).trim().toUpperCase(),
+                        Purok_Address: row.Purok_Address || row.Address || "Purok 1",
+                        Meter_No: row.Meter_No || row.MeterNo || "MTR-000",
+                        Status: row.Status || "Active",
+                        PASSEND: String(row.PASSEND || row.PIN || "0000"),
+                        Balance_Due: row.Balance_Due || row.Balance || "₱0.00"
+                    });
+                }
+
+                // Populate billing history logs if present in row
+                if (row.Billing_Month || row.Bill_ID) {
+                    if (!readingsDB[accNo]) readingsDB[accNo] = [];
+                    readingsDB[accNo].push({
+                        Bill_ID: row.Bill_ID || "BIL-00",
+                        Billing_Month: row.Billing_Month || "Current Billing",
+                        Reading_Date: row.Reading_Date || new Date().toISOString().split('T')[0],
+                        Prev_Reading: Number(row.Prev_Reading || 0),
+                        Pres_Reading: Number(row.Pres_Reading || 0),
+                        Consumption: Number(row.Consumption || 0),
+                        Total_Due: row.Total_Due || "₱0.00",
+                        Status: row.Bill_Status || row.Billing_Status || "Unpaid"
+                    });
+                }
+            });
+
+            consumersDB = Array.from(consumerMap.values());
+        }
 
         function initApp() {
             const source = document.getElementById('app-source').innerHTML;
             document.getElementById('desktop-view-container').innerHTML = source;
             document.getElementById('app-content-slot').innerHTML = source;
+            
+            // Fetch live sheet data on load
+            fetchWaterDatabase();
         }
 
         function toggleMobileFrame() {
