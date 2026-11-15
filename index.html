@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dalcon Waterworks - Consumer Portal</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Aqua Glow & Ripple Effects */
+        .aqua-glow {
+            box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
+        }
+        .aqua-card {
+            background: linear-gradient(135deg, rgba(8, 51, 68, 0.4) 0%, rgba(3, 7, 18, 0.7) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        @keyframes floatBubble {
+            0% { transform: translateY(0px) scale(1); opacity: 0.2; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+        }
+        .bubble {
+            position: absolute;
+            bottom: -20px;
+            background: rgba(6, 182, 212, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatBubble 8s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-cyan-950 to-blue-950 text-cyan-50 min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Background Bubbles / Water FX -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="bubble w-4 h-4 left-[10%] animate-[floatBubble_7s_infinite]"></div>
+        <div class="bubble w-6 h-6 left-[30%] animate-[floatBubble_10s_infinite_1s]" style="animation-delay: 1s;"></div>
+        <div class="bubble w-3 h-3 left-[65%] animate-[floatBubble_6s_infinite_2s]" style="animation-delay: 2.5s;"></div>
+        <div class="bubble w-5 h-5 left-[85%] animate-[floatBubble_9s_infinite_1.5s]" style="animation-delay: 1.2s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-cyan-950/80 backdrop-blur-md border-b border-cyan-500/20 py-4 px-6 shadow-lg relative z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-cyan-600 to-blue-500 p-2.5 rounded-xl text-white font-bold text-xl shadow-lg shadow-cyan-500/30">💧</div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                        Dalcon Waterworks <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-normal border border-cyan-500/30">AquaPortal</span>
+                    </h1>
+                    <p class="text-xs text-cyan-400/80">Consumer Self-Service & Billing System</p>
+                </div>
+            </div>
+            <!-- Mobile Preview Toggle & Logout Badge -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleMobileFrame()" id="preview-toggle-btn" class="hidden sm:inline-flex items-center space-x-1.5 text-xs bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 px-3 py-1.5 rounded-full border border-cyan-500/30 transition font-medium shadow-sm">
+                    <span>📱</span>
+                    <span id="toggle-btn-text">Mobile View</span>
+                </button>
+                <div id="user-badge" class="hidden flex items-center space-x-3 bg-cyan-950/90 px-3.5 py-1.5 rounded-full border border-cyan-500/30 shadow-inner">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400"></span>
+                    <span id="nav-username" class="text-sm font-medium text-cyan-100"></span>
+                    <button onclick="logout()" class="text-xs text-rose-400 hover:text-rose-300 ml-2 font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Outer Wrapper / Mobile Frame Container -->
+    <div id="viewport-wrapper" class="flex-grow flex items-center justify-center p-0 sm:p-6 transition-all duration-300 relative z-10">
+        
+        <!-- Smartphone Frame (Initially hidden or toggled) -->
+        <div id="phone-frame" class="hidden w-full sm:max-w-[390px] h-auto sm:h-[844px] bg-slate-950 sm:border-[12px] sm:border-cyan-950 sm:rounded-[48px] shadow-2xl shadow-cyan-950/80 flex flex-col relative overflow-hidden transition-all">
+            
+            <!-- Phone Notch / Dynamic Island -->
+            <div class="hidden sm:flex absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-cyan-950 rounded-b-2xl z-50 items-center justify-center">
+                <div class="w-12 h-1.5 bg-slate-900 rounded-full"></div>
+            </div>
+
+            <!-- Phone Scrollable Content Area -->
+            <div class="flex-grow overflow-y-auto w-full p-4 sm:pt-10 sm:pb-8">
+                <!-- Main Container inside phone -->
+                <main class="w-full">
+                    <div id="app-content-slot"></div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Default Full Desktop/Fluid View Container -->
+        <main id="desktop-view-container" class="flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6">
+            <!-- App Content will be cloned or rendered here -->
+        </main>
+    </div>
+
+    <!-- Hidden Template Source for Content -->
+    <div id="app-source" class="hidden">
+        <!-- Login Card -->
+        <section id="login-section" class="max-w-md mx-auto mt-6 sm:mt-12 bg-slate-900/90 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 sm:p-8 shadow-[0_0_30px_rgba(6,182,212,0.15)] relative overflow-hidden">
+            <!-- Decorative Water Glow Effect -->
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="text-center mb-6 relative z-10">
+                <div class="inline-flex p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl text-cyan-400 text-2xl mb-2 shadow-inner">
+                    💧
+                </div>
+                <h2 class="text-2xl font-bold tracking-tight text-white">Consumer Login</h2>
+                <p class="text-sm text-slate-400 mt-1">Enter your registered credentials to access your portal</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-cyan-400/80 mb-1">Full Name</label>
+                    <input type="text" id="login-name" required placeholder="" autocomplete="off"
+                        class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-cyan-400/80 mb-1">Password / PIN</label>
+                    <input type="password" id="login-pass" required placeholder="" autocomplete="current-password"
+                        class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition">
+                </div>
+                <div id="login-error" class="text-rose-400 text-xs hidden font-medium text-center bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-cyan-500/20 cursor-pointer">
+                    Access Portal Dashboard
+                </button>
+            </form>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="hidden space-y-6">
+            
+            <!-- Account & Meter Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Account Number</p>
+                    <p id="disp-account" class="text-xl font-bold text-cyan-200 mt-1">-</p>
+                    <p id="disp-purok" class="text-xs text-cyan-400/70 mt-0.5">-</p>
+                </div>
+                <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Meter Number</p>
+                    <p id="disp-meter" class="text-xl font-bold text-white mt-1">-</p>
+                    <p class="text-xs text-emerald-400 mt-0.5 font-medium flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Status: Active
+                    </p>
+                </div>
+                <div class="aqua-card p-5 rounded-2xl shadow-md border border-cyan-500/20">
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Current Balance Due</p>
+                    <p id="disp-balance" class="text-xl font-bold text-amber-300 mt-1">₱0.00</p>
+                    <p class="text-xs text-cyan-400/70 mt-0.5">Updated Live</p>
+                </div>
+            </div>
+
+            <!-- Latest Reading Banner with Prominent Previous, Present & Consumption Breakdown -->
+            <div class="bg-gradient-to-r from-cyan-900/40 via-blue-900/30 to-slate-900/60 border border-cyan-500/30 rounded-2xl p-6 shadow-xl backdrop-blur-md aqua-glow">
+                <div class="flex flex-col gap-5">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <span class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Latest Water Reading</span>
+                            <h3 id="latest-month" class="text-xl font-bold text-white mt-2">-</h3>
+                            <p class="text-xs text-cyan-300/80 mt-0.5">Reading Date: <span id="latest-date" class="text-cyan-100 font-medium">-</span></p>
+                        </div>
+                        <div class="text-left sm:text-right mt-2 sm:mt-0">
+                            <p class="text-[10px] uppercase font-semibold text-cyan-400">Total Amount Due</p>
+                            <p id="latest-amount" class="text-2xl font-bold text-emerald-300">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Reading Metrics Grid (Prev, Pres, Consumption) -->
+                    <div class="grid grid-cols-3 gap-3 bg-slate-950/80 p-4 rounded-xl border border-cyan-500/20 shadow-inner">
+                        <div class="text-center border-r border-cyan-500/20 pr-2">
+                            <p class="text-[10px] sm:text-xs uppercase font-semibold text-cyan-400">Previous Reading</p>
+                            <p id="latest-prev" class="text-base sm:text-xl font-bold text-cyan-200 mt-1">-</p>
+                        </div>
+                        <div class="text-center border-r border-cyan-500/20 px-2">
+                            <p class="text-[10px] sm:text-xs uppercase font-semibold text-cyan-400">Current Reading</p>
+                            <p id="latest-pres" class="text-base sm:text-xl font-bold text-white mt-1">-</p>
+                        </div>
+                        <div class="text-center pl-2">
+                            <p class="text-[10px] sm:text-xs uppercase font-semibold text-cyan-400">Consumption</p>
+                            <p id="latest-consumption" class="text-base sm:text-xl font-bold text-cyan-300 mt-1">- cu.m</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing History Table -->
+            <div class="aqua-card rounded-2xl shadow-lg border border-cyan-500/20 overflow-hidden">
+                <div class="p-4 border-b border-cyan-500/20 flex justify-between items-center bg-cyan-950/30">
+                    <div>
+                        <h3 class="font-bold text-base text-white">Billing History</h3>
+                        <p class="text-[11px] text-cyan-300/80">Chronological water meter records</p>
+                    </div>
+                    <span id="history-count" class="text-xs bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 px-2.5 py-1 rounded-full font-medium">0 records</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-cyan-950/60 text-[10px] font-semibold text-cyan-300 uppercase tracking-wider border-b border-cyan-500/20">
+                                <th class="py-2.5 px-3">Period</th>
+                                <th class="py-2.5 px-3">Date</th>
+                                <th class="py-2.5 px-3">Prev</th>
+                                <th class="py-2.5 px-3">Pres</th>
+                                <th class="py-2.5 px-3">Cu.m</th>
+                                <th class="py-2.5 px-3">Due</th>
+                                <th class="py-2.5 px-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-cyan-500/10">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-cyan-400/60 border-t border-cyan-500/10 mt-auto bg-cyan-950/40 backdrop-blur-md relative z-10">
+        Dalcon Waterworks Management System &copy; 2026 • Pure Aquatic Intelligence
+    </footer>
+
+    <!-- Script Logic -->
+    <script>
+        const consumersDB = [
+            { Account_No: "ACC-001", Full_Name: "GONZALEZ MICHAEL", Purok_Address: "Purok 1", Meter_No: "MTR-1001", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱450.00" },
+            { Account_No: "ACC-002", Full_Name: "SABANDAL DELFIN", Purok_Address: "Purok 2", Meter_No: "MTR-1002", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-003", Full_Name: "SARDUAL JOJO", Purok_Address: "Purok 3", Meter_No: "MTR-1003", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱120.00" },
+            { Account_No: "ACC-004", Full_Name: "ASARES CARMELITA", Purok_Address: "Purok 4", Meter_No: "MTR-1004", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-005", Full_Name: "JUNIO ADELAIDA", Purok_Address: "Purok 5", Meter_No: "MTR-1005", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱310.00" },
+            { Account_No: "ACC-006", Full_Name: "LASCO JOJO", Purok_Address: "Purok 6", Meter_No: "MTR-1006", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-007", Full_Name: "DALAGUAN CEASAR", Purok_Address: "Purok 7", Meter_No: "MTR-1007", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-008", Full_Name: "BURDEOS LORENA", Purok_Address: "Purok 8", Meter_No: "MTR-1008", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-009", Full_Name: "MERSOLA BENIDO", Purok_Address: "Purok 9", Meter_No: "MTR-1009", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" },
+            { Account_No: "ACC-010", Full_Name: "GANZAN MATEO", Purok_Address: "Purok 10", Meter_No: "MTR-1010", Initial_Reading: 0, Status: "Active", PASSEND: "0000", Balance_Due: "₱0.00" }
+        ];
+
+        const readingsDB = {
+            "ACC-001": [
+                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-05", Prev_Reading: 125, Pres_Reading: 140, Consumption: 15, Total_Due: "₱450.00", Status: "Unpaid" },
+                { Bill_ID: "BIL-2026-10", Billing_Month: "October 2026", Reading_Date: "2026-10-04", Prev_Reading: 110, Pres_Reading: 125, Consumption: 15, Total_Due: "₱450.00", Status: "Paid" },
+                { Bill_ID: "BIL-2026-09", Billing_Month: "September 2026", Reading_Date: "2026-09-03", Prev_Reading: 95, Pres_Reading: 110, Consumption: 15, Total_Due: "₱450.00", Status: "Paid" }
+            ],
+            "ACC-003": [
+                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-06", Prev_Reading: 50, Pres_Reading: 58, Consumption: 8, Total_Due: "₱240.00", Status: "Unpaid" },
+                { Bill_ID: "BIL-2026-10", Billing_Month: "October 2026", Reading_Date: "2026-10-05", Prev_Reading: 42, Pres_Reading: 50, Consumption: 8, Total_Due: "₱240.00", Status: "Paid" }
+            ],
+            "ACC-005": [
+                { Bill_ID: "BIL-2026-11", Billing_Month: "November 2026", Reading_Date: "2026-11-06", Prev_Reading: 210, Pres_Reading: 220, Consumption: 10, Total_Due: "₱310.00", Status: "Unpaid" }
+            ]
+        };
+
+        let isMobileView = false;
+        let loggedInConsumer = null;
+
+        function initApp() {
+            const source = document.getElementById('app-source').innerHTML;
+            document.getElementById('desktop-view-container').innerHTML = source;
+            document.getElementById('app-content-slot').innerHTML = source;
+        }
+
+        function toggleMobileFrame() {
+            isMobileView = !isMobileView;
+            const phoneFrame = document.getElementById('phone-frame');
+            const desktopContainer = document.getElementById('desktop-view-container');
+            const btnText = document.getElementById('toggle-btn-text');
+
+            if (isMobileView) {
+                phoneFrame.classList.remove('hidden');
+                desktopContainer.classList.add('hidden');
+                btnText.textContent = "Desktop View";
+            } else {
+                phoneFrame.classList.add('hidden');
+                desktopContainer.classList.remove('hidden');
+                btnText.textContent = "Mobile View";
+            }
+            if (loggedInConsumer) {
+                loadDashboard(loggedInConsumer);
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const activeContainer = isMobileView ? document.getElementById('phone-frame') : document.getElementById('desktop-view-container');
+            const nameInput = activeContainer.querySelector('#login-name').value.trim().toUpperCase();
+            const passInput = activeContainer.querySelector('#login-pass').value.trim();
+            const errorDiv = activeContainer.querySelector('#login-error');
+
+            const consumer = consumersDB.find(c => c.Full_Name === nameInput && c.PASSEND === passInput);
+
+            if (consumer) {
+                loggedInConsumer = consumer;
+                errorDiv.classList.add('hidden');
+                loadDashboard(consumer);
+            } else {
+                errorDiv.textContent = "Invalid Full Name or Password/PIN. Please check your credentials.";
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function loadDashboard(consumer) {
+            const containers = [document.getElementById('desktop-view-container'), document.getElementById('phone-frame')];
+            
+            containers.forEach(container => {
+                container.querySelector('#login-section').classList.add('hidden');
+                container.querySelector('#dashboard-section').classList.remove('hidden');
+            });
+
+            document.getElementById('user-badge').classList.remove('hidden');
+            document.getElementById('nav-username').textContent = consumer.Full_Name;
+
+            containers.forEach(container => {
+                container.querySelector('#disp-account').textContent = consumer.Account_No;
+                container.querySelector('#disp-purok').textContent = consumer.Purok_Address;
+                container.querySelector('#disp-meter').textContent = consumer.Meter_No;
+                container.querySelector('#disp-balance').textContent = consumer.Balance_Due || "₱0.00";
+
+                let history = readingsDB[consumer.Account_No] || [];
+                history.sort((a, b) => new Date(b.Reading_Date) - new Date(a.Reading_Date));
+
+                container.querySelector('#history-count').textContent = `${history.length} records`;
+
+                if (history.length > 0) {
+                    const latest = history[0];
+                    container.querySelector('#latest-month').textContent = latest.Billing_Month;
+                    container.querySelector('#latest-date').textContent = latest.Reading_Date;
+                    container.querySelector('#latest-prev').textContent = latest.Prev_Reading;
+                    container.querySelector('#latest-pres').textContent = latest.Pres_Reading;
+                    container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
+                    container.querySelector('#latest-amount').textContent = latest.Total_Due;
+                } else {
+                    container.querySelector('#latest-month').textContent = "No Records Found";
+                    container.querySelector('#latest-date').textContent = "N/A";
+                    container.querySelector('#latest-prev').textContent = "0";
+                    container.querySelector('#latest-pres').textContent = "0";
+                    container.querySelector('#latest-consumption').textContent = "0 cu.m";
+                    container.querySelector('#latest-amount').textContent = "₱0.00";
+                }
+
+                const tbody = container.querySelector('#history-table-body');
+                tbody.innerHTML = "";
+
+                if (history.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-cyan-400/60">No billing history available yet.</td></tr>`;
+                    return;
+                }
+
+                history.forEach(item => {
+                    const statusBadge = item.Status === 'Paid' 
+                        ? `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">Paid</span>`
+                        : `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">Unpaid</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-cyan-900/20 transition border-b border-cyan-500/10";
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-medium text-white">${item.Billing_Month}</td>
+                        <td class="py-2.5 px-3 text-cyan-300/80 text-[11px]">${item.Reading_Date}</td>
+                        <td class="py-2.5 px-3 text-cyan-200">${item.Prev_Reading}</td>
+                        <td class="py-2.5 px-3 text-white font-medium">${item.Pres_Reading}</td>
+                        <td class="py-2.5 px-3 text-cyan-300 font-semibold">${item.Consumption} cu.m</td>
+                        <td class="py-2.5 px-3 text-emerald-300 font-semibold">${item.Total_Due}</td>
+                        <td class="py-2.5 px-3">${statusBadge}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function logout() {
+            loggedInConsumer = null;
+            const containers = [document.getElementById('desktop-view-container'), document.getElementById('phone-frame')];
+            containers.forEach(container => {
+                container.querySelector('#dashboard-section').classList.add('hidden');
+                container.querySelector('#login-section').classList.remove('hidden');
+                container.querySelector('#login-form').reset();
+            });
+            document.getElementById('user-badge').classList.add('hidden');
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
