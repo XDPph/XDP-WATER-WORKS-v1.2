@@ -248,6 +248,14 @@
             return `${mm}-${dd}-${yyyy}`;
         }
 
+        // Helper function to check if balance is zero or empty
+        function isZeroBalance(val) {
+            if (!val) return true;
+            const cleanVal = String(val).replace(/[^\d.-]/g, '');
+            const num = parseFloat(cleanVal);
+            return isNaN(num) || num === 0;
+        }
+
         // Generate Dynamic PWA Web App Manifest
         const manifestData = {
             "name": "Dalcon Waterworks Portal",
@@ -439,8 +447,14 @@
                     container.querySelector('#latest-consumption').textContent = `${latest.Consumption} cu.m`;
                     container.querySelector('#latest-amount').textContent = latest.Current_Charge;
                     
-                    container.querySelector('#disp-arrears').textContent = latest.Arrears || "₱0.00";
-                    container.querySelector('#disp-balance').textContent = latest.Balance_Due || consumer.Balance_Due || "₱0.00";
+                    // If latest Balance_Due is 0.00, force ARREARS to 0.00 as well
+                    const balanceDueVal = latest.Balance_Due || consumer.Balance_Due || "₱0.00";
+                    if (isZeroBalance(balanceDueVal)) {
+                        container.querySelector('#disp-arrears').textContent = "₱0.00";
+                    } else {
+                        container.querySelector('#disp-arrears').textContent = latest.Arrears || "₱0.00";
+                    }
+                    container.querySelector('#disp-balance').textContent = balanceDueVal;
                 } else {
                     container.querySelector('#latest-month').textContent = "No Records Found";
                     container.querySelector('#latest-date').textContent = "N/A";
